@@ -67,22 +67,26 @@ void Withdraw()
 	Authenticaton();
 WD:
 	printf("\nEnter amount in Nrs that you want to withdraw:");
-	scanf("%ld",&cashout);
+	scanf("%ld",&cash);
 	if (cash<=50000 && cash>0)
 	{
 		if (cmp.balance>=cash)
 		{
-			cmp.balance=cmp.balance-cashout;//amend statements are missing
+			cmp.balance=cmp.balance-cash;//amend statements are missing
 		}
 		else
 		{
 			printf("\nInsufficient balance please try again after confirming your balance.");
-			goto Startup;
+			getch();
+			system("cls");
+			goto WD;
 		}
 	}
 	else
 	{
 		printf("\nYou are trying to withdraw more money than what is permitted by the bank please reconsider a valid amount.");
+		getch();
+		system("cls");
 		goto WD;
 	}
 }
@@ -98,10 +102,12 @@ DP:
 	}
 	else
 	{
+		
 		printf("\nYou are trying to deposit more money than what is permitted by the bank please reconsider a valid amount.");
+		getch();
+		system("cls");
 		goto DP;
 	}
-}
 }
 void BalanceInquiry()
 {
@@ -135,25 +141,24 @@ int main()
 	FILE *ptr=fopen("C:\\codes\\nodeRepo.bin","wb");//need to change wb to rb+ later also create a folder in C drive named codes in your computer
 	char choice;
 Startup:
-	printf("\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
-	printf("----------------------------------------------------------------------------------------------------------------------------------------------");
+	printf("\n\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
+	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
 	printf("\na. Withdraw Cash");
 	printf("\nb. Deposit Cash");
 	printf("\nc. Balance Inquiry");
 	printf("\nd. Balance Inquiry");
-	printf("----------------------------------------------------------------------------------------------------------------------------------------------");
+	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
 	printf("\nProceed to select an option: ");
 	fflush(stdin);
-	gets(choice);
+	scanf("%c",&choice);
 	/*AVOID THIS!!!
 	time_t now = time(NULL);
 	char *string =ctime(&now);
 	printf("%s\n",string);*/
 	switch(choice)
 	{
-
 		case 'a'://withdraw
-			Withdraw()
+			Withdraw();
 			goto	Startup;
 			break;
 		case 'b'://deposit
@@ -172,6 +177,8 @@ Startup:
 			exit(0);
 		default:
 			printf("\nGiven input is out of range, please select option from range (a to d).");
+			getch();
+			system("cls");
 			goto Startup;
 			break;
 	}
