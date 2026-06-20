@@ -1,86 +1,96 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
+#include<conio.h>
 #include<string.h>
+
 struct Balance
 {
-	int bal;
-	char dateNtime[];
+	long int bal[2];//0 stores deposit, 1 stores withdraw
+	char date[50];
+	char time[50];  
 };
+
 struct Accounts
 {
-	int accNo[8];
+	char accNo[9];
 	char name[50];
-	int pin[4];//4 unique numbers
+	char pin[5];//4 unique numbers
 	long int balance;//only takes data to billion
 	char accType[50];
-	struct Balance transaction[5];
+	struct Balance transaction[10];
+	int DataPoint; //stores pointer to overwrite data
 } AccData;
+
 long int cash;
+
 void  Authenticaton()
 {
-	FILE *readptr=fopen("acc_details.dat","rb");
-	int accnum[8],pinnum[4],retry=0,pinflag=0,accflag=0,i,j;
+	FILE* ReadPtr=fopen("AccountRecords.txt","rb");
+	if (ReadPtr==NULL)
+	{
+		printf("\nFile not created");
+	}
+	int retry=0;
+	char accnum[8],pinnum[4];
 Auth:
-	printf("\nEnter your Account number(one at a time):");
-	for (i=0; i<8; i++)
+	printf("\nEnter your Account number: ");
+	fflush(stdin);
+	gets(pinnum);
+	printf("\nEnter your PIN number: ");
+	fgets(pinnum,sizeof(pinnum),stdin);
+	while (fread(&AccData,sizeof(struct Accounts),1,ReadPtr)==1)//need to be checked if it accepts /0 or EOF or NULL
 	{
-		scanf("%d",&accnum[i]);
-	}
-	printf("\nEnter your PIN number(one at a time):");
-	for (i=0; i<4; i++)
-	{
-		scanf("%d",&pinnum[i]);
-	}
-	while (fread(&AccData,sizeof(struct Accounts),1,readptr)!=EOF)//need to be checked if it accepts /0 or EOF or NULL
-	{
-		for (i=0; i>8 ; i++)//comparison logic is wrong
+		if (strcmp(AccData.accNo,accnum)!=0||strcmp(AccData.pin,pinnum)!=0)
 		{
-			if (AccData.accNo[i]==accnum[i])
+			retry++;
+			if (retry<5)
 			{
-			accflag++;
+				printf("\nInvalid account number or PIN number please try again");
+				getch();
+				system("cls");
+				goto Auth;
+			}
+			else if (retry==5)
+			{
+			printf("\nYour choice of input has failed to access the account multiple times. So we have proceeded to end the application.");
+			fclose(ReadPtr);
+			exit(0);
 			}
 		}
-		if (accflag!=7)
+		else if(strcmp(AccData.accNo,accnum)==0 && strcmp(AccData.pin,pinnum)==0)
 		{
-			accflag=0;
+			printf("\nWelcome");
+			fclose(ReadPtr);
+			break;
 		}
-		if (accflag==7)
-		{
-			while (fread(&AccData,sizeof(struct Accounts),1,readptr)!=EOF)//need to be checked if it accepts /0 or EOF or NULL
-			{
-				for(j=0;j<4;j++)//comparison logic is wrong
-				{
-					if (AccData.pin[i]==pinnum[i])
-					{	
-						pinflag++;
-					}
-				}
-				pinflag=0;
-			}
-		}
-	}
-	//may need editing
-	if ((pinflag<4||accflag<7) && retry<5)
-	{
-		printf("\nIncorrect PIN or account number please try again.");
-		retry++;
-		getch();
-		system("cls");
-		goto Auth;
-	}
-	else if ((pinflag<4||accflag<7) && retry==5)
-	{
-		printf("\nYour choice of input has failed to access the account multiple times. So we have proceeded to end the application.");
-		fclose(readptr);
-		exit(0);
-	}
-	else if (pinflag==4 && accflag==7)
-	{
-		printf("\nWelcome");
-		fclose(readptr);
 	}
 }
+
+void Amend(int Inflow,int Outflow)
+{
+	FILE *AmendPtr=fopen("AccountRecords.txt","rb+");
+	struct Accounts Amd;
+	while (fread(&Amd,sizeof(struct Accounts),1,AmendPtr)==1)
+	{
+		if (strcmp(AccData.accNo,Amd.accNo)==0)
+		{
+			Amd=AccData;
+			Amd.transaction[AccData.DataPoint].bal[0]=Inflow;
+			Amd.transaction[AccData.DataPoint].bal[1]=Outflow;
+			strcpy(Amd.transaction[AccData.DataPoint].date,__DATE__);
+			strcpy(Amd.transaction[AccData.DataPoint].time,__TIME__);
+			Amd.DataPoint++;
+			if (Amd.DataPoint==10)
+			{
+				Amd.DataPoint=0;
+			}
+		}
+		fwrite(&Amd,sizeof(Amd),1,AmendPtr);
+	}
+	fclose(AmendPtr);
+}
+
 void Withdraw()
 {
 	Authenticaton();
@@ -92,6 +102,7 @@ WD:
 		if (AccData.balance>=cash)
 		{
 			AccData.balance=AccData.balance-cash;//amend statements are missing
+			Amend(0,cash);
 		}
 		else
 		{
@@ -110,6 +121,7 @@ WD:
 	}
 	cash=0;
 }
+
 void Deposit()
 {
 	Authenticaton();
@@ -118,8 +130,9 @@ DP:
 	scanf("%ld",&cash);
 	if (cash<=50000 && cash>0)
 	{
-		printf("Nrs %ld has been deposited in your acc %ld",cash,AccData.accNo);
+		printf("\nNrs %ld has been deposited in your acc %ld",cash,AccData.accNo);
 		AccData.balance=AccData.balance+cash;//amend statements are missing
+		Amend(cash,0);
 	}
 	else
 	{
@@ -129,25 +142,65 @@ DP:
 	}
 	cash=0;
 }
+
 void BalanceInquiry()
 {
+	int i=0;
 	Authenticaton();
-
+	printf("\n                                   BALANCE INQUIRY");
+	printf("\n_____________________________________________________________________________________________");
+	printf("\nDate                     |Time                        |Credit                 |Debit         ");
+	for (i=0;i<10;i++)
+	{
+		if (AccData.transaction[i].bal[1]==0 && AccData.transaction[i].bal[0]==0)
+		{
+			break;
+		}
+		else if(AccData.transaction[i].bal[1]==0 && AccData.transaction[i].bal[0]!=0)
+		{
+			printf("%s     %s     %d             -",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[0]);
+		}
+		else if(AccData.transaction[i].bal[0]==0 && AccData.transaction[i].bal[1]!=0)
+		{
+			printf("%s     %s        -             %d",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[1]);
+		}
+	}
+	printf("\n                                                     Total balance is:%ld",AccData.balance);
+	getch();
 }
+
 void NewID()
 {
-	//file pointer needed to link the new accs to file
+	
+	int i,j,min=10000000,max=99999999,num=0;
+	srand(time(NULL));
+	FILE *NewIDPtr=fopen("AccountRecords.bin","ab");
+	if (NewIDPtr==NULL)
+	{
+		printf("file not created");
+	}
 	char choice;
 	printf("\nEnter you Name: ");
+	fflush(stdin);
 	gets(AccData.name);
-	//unique generation for acc no. needs to be put in place of 8 digits
+	PIN:
 	printf("\nEnter a unique pin to your account: ");
-	scanf("%d",AccData.pin);
-	printf("\nEnter the account type: ");
-	gets(AccData.accType);
+	fflush(stdin);
+	gets(AccData.pin);
+    for (i=0;i<4;i++)
+    {
+    	for (j=i+1;j<4;j++)
+    	{
+    		if (AccData.pin[i]==AccData.pin[j])
+			{
+				printf("\nThe pin is not unique enough please try again.");
+				goto PIN;
+			}		
+		}
+	}
 	AccData.balance=1000;
 NewIDChoice:
-	printf("Is there any addition to opening balance than what is required?");
+	printf("\nIs there any addition to opening balance than what is required?(y/n)");
 	fflush(stdin);
 	gets(&choice);
 	strupr(&choice);
@@ -156,8 +209,6 @@ NewIDChoice:
 		printf("\nEnter additional amount: ");
 		scanf("%ld",&cash);
 		AccData.balance+=cash;
-		//time constraint needs to be added
-		AccData.transaction[0].bal=cash;
 	}
 	else if (choice=='N')
 	{
@@ -168,10 +219,16 @@ NewIDChoice:
 		printf("\nInvalid choice please try again.");
 		goto NewIDChoice;
 	}
+	Amend(AccData.balance,0);
+	num=(rand()%(max-min+1))+min;
+	snprintf(AccData.accNo,sizeof(AccData.accNo),"%d",num);//unique generation for acc no. needs to be put in place of 8 digits
+	printf("\nYour Account Number is: %s with PIN number: %s",AccData.accNo,AccData.pin);
+	printf("\n%s",AccData.name);
 	AccType:
-	printf("\nChoose a account type:\na.Fixed Account\nb.Current Account\nc.Savings Account");	
+	printf("\nChoose a account type:\na.Fixed Account\nb.Current Account\nc.Savings Account\n");	
 	fflush(stdin);
 	gets(&choice);
+	strlwr(&choice);
 	switch(choice)
 	{
 		case 'a':
@@ -184,35 +241,21 @@ NewIDChoice:
 			strcpy(AccData.accType,"Savings Account");
 			break;
 		default:
-			printf("Account type is out of range please choose again.");
+			printf("\nAccount type is out of range please choose again.");
 			goto AccType;
 			break;
 	}
+	AccData.DataPoint=1;
+	fwrite(&AccData,sizeof(AccData),1,NewIDPtr);
 	cash=0;
+	fclose(NewIDPtr);
 }
 
-
-/*AVOID THIS!!
-#include <stdio.h>
-#include <time.h>
-
-int main() {
-    char date_string[100];
-    time_t raw_time = time(NULL); // Get current epoch time
-    struct tm *local_time = localtime(&raw_time); // Convert to local time components
-
-    // Format: "YYYY-MM-DD HH:MM:SS"
-    strftime(date_string, sizeof(date_string), "%Y-%m-%d %H:%M:%S", local_time);
-
-    printf("Formatted Date/Time: %s\n", date_string);
-    return 0;
-}
-*/
 int main()
 {
-	FILE *ptr=fopen("C:\\codes\\nodeRepo.bin","wb");//need to change wb to rb+ later also create a folder in C drive named codes in your computer
 	char choice;
 Startup:
+	fflush(stdin);
 	printf("\n\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
 	getch();
 	system("cls");
@@ -220,38 +263,36 @@ Startup:
 	printf("\na. Withdraw Cash");
 	printf("\nb. Deposit Cash");
 	printf("\nc. Balance Inquiry");
-	printf("\nd. Balance Inquiry");
+	printf("\nd. New ID");
+	printf("\ne. Exit");
 	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
-	printf("\nProceed to select an option: ");
+	printf("\nProceed to select an option\n");
 	fflush(stdin);
 	scanf("%c",&choice);
 	strlwr(&choice);
-	/*AVOID THIS!!!
-	time_t now = time(NULL);
-	char *string =ctime(&now);
-	printf("%s\n",string);*/
 	switch(choice)
 	{
 		case 'a'://withdraw
 			Withdraw();
-			goto	Startup;
+			system("cls");
 			break;
 		case 'b'://deposit
 			Deposit();
-			goto	Startup;
+			system("cls");
 			break;
 		case 'c'://balance inquiry
 			BalanceInquiry();
-			goto	Startup;
+			system("cls");
 			break;
 		case 'd'://new acc creation
 			NewID();
-			goto	Startup;
+			system("cls");
 			break;
 		case 'e'://exit case
 			exit(0);
+			break;
 		default:
-			printf("\nGiven input is out of range, please select option from range (a to d).");
+			printf("\nGiven input is out of range, please select option from range (a to e).");
 			getch();
 			system("cls");
 			goto Startup;
