@@ -37,30 +37,32 @@ void  Authenticaton()
 Auth:
 	printf("\nEnter your Account number: ");
 	fflush(stdin);
-	gets(accnum);
+	fgets(accnum,9,stdin);
 	printf("\nEnter your PIN number: ");
 	fflush(stdin);
-	gets(pinnum);
+	fgets(pinnum,5,stdin);
 	while (fread(&AccData,sizeof(struct Accounts),1,ReadPtr)==1)//need to be checked if it accepts /0 or EOF or NULL
 	{
 		if (strcmp(AccData.accNo,accnum)!=0 || strcmp(AccData.pin,pinnum)!=0)
 		{
-			retry++;
-			if (retry<5)
+			retry=retry+1;
+			if (retry <= 5)
 			{
 				printf("\nInvalid account number or PIN number please try again");
+				printf("\ntries remaining:%d",5-retry);//tries used are counted from 1
 				getch();
 				system("cls");
+				fseek(ReadPtr,0, SEEK_SET);
 				goto Auth;
 			}
-			else if (retry==5)
+			else if ( retry >= 4 )//reading is started from retry 0
 			{
 				printf("\nYour choice of input has failed to access the account multiple times. So we have proceeded to end the application.");
 				fclose(ReadPtr);
 				exit(0);
 			}
 		}
-		else if(strcmp(AccData.accNo,accnum)==0 && strcmp(AccData.pin,pinnum)==0)
+		else if( strcmp(AccData.accNo,accnum)==0 && strcmp(AccData.pin,pinnum)==0 && retry<5)
 		{
 			printf("\nWelcome");
 			fclose(ReadPtr);
@@ -100,6 +102,7 @@ void Amend(long int Inflow,long int Outflow)
 
 void Withdraw()
 {
+	system("cls");
 	Authenticaton();
 WD:
 	printf("\nEnter amount in Nrs that you want to withdraw:");
@@ -109,7 +112,7 @@ WD:
 		if (AccData.balance>=cash)
 		{
 			printf("\nNrs %ld has been withdrawn from your acc %s",cash,AccData.accNo);
-			AccData.balance=AccData.balance-cash;//amend statements are missing
+			AccData.balance=AccData.balance-cash;
 			Amend(0,cash);
 		}
 		else
@@ -132,6 +135,7 @@ WD:
 
 void Deposit()
 {
+	system("cls");
 	Authenticaton();
 DP:
 	printf("\nEnter the amount you want to deposit to your account:");
@@ -139,7 +143,7 @@ DP:
 	if (cash<=50000 && cash>0)
 	{
 		printf("\nNrs %ld has been deposited in your acc %s",cash,AccData.accNo);
-		AccData.balance=AccData.balance+cash;//amend statements are missing
+		AccData.balance=AccData.balance+cash;
 		Amend(cash,0);
 	}
 	else
@@ -153,6 +157,7 @@ DP:
 
 void BalanceInquiry()
 {
+	system("cls");
 	int i=0;
 	Authenticaton();
 	printf("\n                                   BALANCE INQUIRY");
@@ -168,11 +173,11 @@ void BalanceInquiry()
 		{
 			if(AccData.transaction[i].bal[1]==0 && AccData.transaction[i].bal[0]!=0)//deposit
 			{
-				printf("%s\t%s\t%ld\t\t-",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[0]);
+				printf("\n%s\t%s\t%ld\t\t-",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[0]);
 			}
 			else if(AccData.transaction[i].bal[0]==0 && AccData.transaction[i].bal[1]!=0)//withdraw
 			{
-				printf("%s\t%s\t-\t\t%ld",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[1]);
+				printf("\n%s\t%s\t-\t\t%ld",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[1]);
 			}
 		}
 	}
@@ -182,13 +187,14 @@ void BalanceInquiry()
 
 void NewID()
 {
+	system("cls");
 	memset(&AccData, 0, sizeof(AccData));
 	struct Accounts AccChk;
 	int i,j,min=11111111,max=99999999,accnum=0,num=0;
 	char choice;
 	FILE *NewIDPtr=fopen("AccountRecords.bin","ab");
 	FILE *AccNo=fopen("AccountRecords.bin","rb");
-	AccNoLoop:
+AccNoLoop:
 	srand(time(NULL));//randomizer
 	if (NewIDPtr==NULL)
 	{
@@ -196,7 +202,7 @@ void NewID()
 		exit(0);
 	}
 	accnum=(rand()%(max-min+1))+min;//unique generation for acc no.
-	snprintf(AccData.accNo,sizeof(AccData.accNo),"%d",accnum);//acc no. generated above is integer in nature so we change it into string 	
+	snprintf(AccData.accNo,sizeof(AccData.accNo),"%d",accnum);//acc no. generated above is integer in nature so we change it into string
 	while(fread(&AccData,sizeof(struct Accounts),1,AccNo)==1)
 	{
 		if (strcmp(AccData.accNo,AccChk.accNo)==0)
@@ -210,23 +216,23 @@ void NewID()
 PIN:
 	printf("\nEnter a unique pin to your account(0 to 9): ");
 	fflush(stdin);
-	gets(AccData.pin);
+	fgets(AccData.pin,5,stdin);
 	for (i=0; i<4; i++)
 	{
 		for (j=i+1; j<4; j++)
 		{
-			if ( AccData.pin[i]< '0' && AccData.pin[i]> '9' )//not working?
+			if (AccData.pin[i]<'0' || AccData.pin[i]>'9')
 			{
-				printf("\nThe pin can only have numbers from 0 to 9");
+				printf("\nThe pin can only have numbers from 0 to 9\n");
 				goto PIN;
 			}
 			if (AccData.pin[i]==AccData.pin[j])
 			{
-				printf("\nThe pin is not unique enough please try again.");
+				printf("\nThe pin is not unique enough please try again.\n");
 				goto PIN;
 			}
 		}
-	} 
+	}
 	printf("\n%s your Account Number is: %s with PIN number: %s",AccData.name,AccData.accNo,AccData.pin);
 AccType:
 	printf("\nChoose a account type:\na.Fixed Account\nb.Current Account\nc.Savings Account\n");
@@ -263,10 +269,15 @@ BalanceChoice:
 		strcpy(AccData.transaction[0].time,__TIME__);
 		AccData.transaction[0].bal[0]=0;
 		AccData.transaction[0].bal[1]+=cash;
+		printf("\nYour opening balance with additional credits has been set");
 	}
 	else if (choice=='n')
 	{
 		printf("\nYour opening balance has been set");
+		strcpy(AccData.transaction[0].date,__DATE__);
+		strcpy(AccData.transaction[0].time,__TIME__);
+		AccData.transaction[0].bal[0]=0;
+		AccData.transaction[0].bal[1]+=cash;
 	}
 	else
 	{
@@ -274,6 +285,7 @@ BalanceChoice:
 		goto BalanceChoice;
 	}
 	fwrite(&AccData,sizeof(struct Accounts),1,NewIDPtr);
+	fwrite(&AccData.transaction,sizeof(struct Balance),1,NewIDPtr);
 	cash=0;
 	fclose(NewIDPtr);
 	fclose(AccNo);
@@ -282,11 +294,11 @@ BalanceChoice:
 int main()
 {
 	char choice;
-Startup:
 	fflush(stdin);
 	printf("\n\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
 	getch();
 	system("cls");
+Startup:
 	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
 	printf("\na. Withdraw Cash");
 	printf("\nb. Deposit Cash");
