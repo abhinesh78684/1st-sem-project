@@ -46,7 +46,7 @@ Auth:
 		if (strcmp(AccData.accNo,accnum)!=0 || strcmp(AccData.pin,pinnum)!=0)
 		{
 			retry=retry+1;
-			if (retry <= 5)
+			if (retry<4)
 			{
 				printf("\nInvalid account number or PIN number please try again");
 				printf("\ntries remaining:%d",5-retry);//tries used are counted from 1
@@ -55,7 +55,7 @@ Auth:
 				fseek(ReadPtr,0, SEEK_SET);
 				goto Auth;
 			}
-			else if ( retry >= 4 )//reading is started from retry 0
+			else if (retry>=4)//reading is started from retry 0
 			{
 				printf("\nYour choice of input has failed to access the account multiple times. So we have proceeded to end the application.");
 				fclose(ReadPtr);
@@ -194,19 +194,20 @@ void NewID()
 	char choice;
 	FILE *NewIDPtr=fopen("AccountRecords.bin","ab");
 	FILE *AccNo=fopen("AccountRecords.bin","rb");
-AccNoLoop:
-	srand(time(NULL));//randomizer
 	if (NewIDPtr==NULL)
 	{
 		printf("file not opened");
 		exit(0);
 	}
-	accnum=(rand()%(max-min+1))+min;//unique generation for acc no.
+	AccNoLoop:
+	accnum=(max%(max-min-num))+min;//unique generation for acc no.
 	snprintf(AccData.accNo,sizeof(AccData.accNo),"%d",accnum);//acc no. generated above is integer in nature so we change it into string
 	while(fread(&AccData,sizeof(struct Accounts),1,AccNo)==1)
 	{
 		if (strcmp(AccData.accNo,AccChk.accNo)==0)
 		{
+			num++;
+			fseek(AccNo,0, SEEK_SET);
 			goto AccNoLoop;
 		}
 	}
@@ -285,7 +286,7 @@ BalanceChoice:
 		goto BalanceChoice;
 	}
 	fwrite(&AccData,sizeof(struct Accounts),1,NewIDPtr);
-	fwrite(&AccData.transaction,sizeof(struct Balance),1,NewIDPtr);
+	
 	cash=0;
 	fclose(NewIDPtr);
 	fclose(AccNo);
