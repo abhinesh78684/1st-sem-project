@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include <unistd.h>
 #include<stdlib.h>
 #include<time.h>
 #include<conio.h>
@@ -13,7 +14,7 @@ struct Balance
 
 struct Accounts
 {
-	char accNo[9];//8 unique numbers
+	char accNo[17];//8 unique numbers
 	char name[50];
 	char pin[5];//4 unique numbers
 	long int balance;//only takes data to billion
@@ -37,7 +38,7 @@ void  Authenticaton()
 Auth:
 	printf("\nEnter your Account number: ");
 	fflush(stdin);
-	fgets(accnum,9,stdin);
+	fgets(accnum,17,stdin);
 	printf("\nEnter your PIN number: ");
 	fflush(stdin);
 	fgets(pinnum,5,stdin);
@@ -190,7 +191,7 @@ void NewID()
 	system("cls");
 	memset(&AccData, 0, sizeof(AccData));
 	struct Accounts AccChk;
-	int i,j,min=11111111,max=99999999,accnum=0,num=0;
+    int min=1111111111111111,max=9999999999999999;
 	char choice;
 	FILE *NewIDPtr=fopen("AccountRecords.bin","ab");
 	FILE *AccNo=fopen("AccountRecords.bin","rb");
@@ -200,7 +201,7 @@ void NewID()
 		exit(0);
 	}
 	AccNoLoop:
-	accnum=(max%(max-min-num))+min;//unique generation for acc no.
+	accnum=min+rand()%(max-min+1);;//unique generation for acc no.
 	snprintf(AccData.accNo,sizeof(AccData.accNo),"%d",accnum);//acc no. generated above is integer in nature so we change it into string
 	while(fread(&AccData,sizeof(struct Accounts),1,AccNo)==1)
 	{
@@ -295,6 +296,7 @@ BalanceChoice:
 int main()
 {
 	char choice;
+	srand(time(NULL)^getpid());
 	fflush(stdin);
 	printf("\n\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
 	getch();
