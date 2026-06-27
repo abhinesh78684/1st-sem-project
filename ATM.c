@@ -14,18 +14,19 @@ struct Balance
 
 struct Accounts
 {
-	char accNo[17];//8 unique numbers
+	char accNo[17];//16 unique numbers
 	char name[50];
 	char pin[5];//4 unique numbers
 	long int balance;//only takes data to billion
 	char accType[50];
 	struct Balance transaction[10];
 	int DataPoint; //stores pointer to overwrite data
+	int Active;//1 means account is active, 0 means account is closed or frozen
 } AccData;
 
 long int cash;
 
-void  Authenticaton()
+void Authenticaton()
 {
 	FILE *ReadPtr=fopen("AccountRecords.bin","rb");
 	if (ReadPtr==NULL)
@@ -33,45 +34,85 @@ void  Authenticaton()
 		printf("\nFile not readable");
 		exit(0);
 	}
-	int retry=0,i;
-	char accnum[9],pinnum[5];
+	int retry=0,i,found;
+	char accnum[17],pinnum[5];
 Auth:
 	printf("\nEnter your Account number: ");
 	fflush(stdin);
 	fgets(accnum,17,stdin);
+	accnum[strcspn(accnum, "\n")] = '\0';
+	if(strlen(accnum) != 16)
+	{
+		printf("\nAccount number must be exactly 16 digits.\n");
+		goto Auth;
+	}
+	for(i = 0; i < (int)strlen(accnum); i++)
+	{
+		if(!(accnum[i] >= '0' && accnum[i] <= '9'))
+		{
+			printf("\nAccount number must contain only digits (0-9).\n");
+			goto Auth;
+		}
+	}
+PINAuth:
 	printf("\nEnter your PIN number: ");
 	fflush(stdin);
 	fgets(pinnum,5,stdin);
-	while (fread(&AccData,sizeof(struct Accounts),1,ReadPtr)==1)//need to be checked if it accepts /0 or EOF or NULL
+	pinnum[strcspn(pinnum, "\n")] = '\0';
+	if(strlen(pinnum) != 4)
 	{
-		if (strcmp(AccData.accNo,accnum)!=0 || strcmp(AccData.pin,pinnum)!=0)
+		printf("\nPIN must be exactly 4 digits.\n");
+		goto PINAuth;
+	}
+	for(i = 0; i < (int)strlen(pinnum); i++)
+	{
+		if(!(pinnum[i] >= '0' && pinnum[i] <= '9'))
 		{
-			retry=retry+1;
-			if (retry<4)
-			{
-				printf("\nInvalid account number or PIN number please try again");
-				printf("\ntries remaining:%d",5-retry);//tries used are counted from 1
-				getch();
-				system("cls");
-				fseek(ReadPtr,0, SEEK_SET);
-				goto Auth;
-			}
-			else if (retry>=4)//reading is started from retry 0
-			{
-				printf("\nYour choice of input has failed to access the account multiple times. So we have proceeded to end the application.");
-				fclose(ReadPtr);
-				exit(0);
-			}
+			printf("\nPIN must contain only digits (0-9).\n");
+			goto PINAuth;
 		}
-		else if( strcmp(AccData.accNo,accnum)==0 && strcmp(AccData.pin,pinnum)==0 && retry<5)
+	}
+	found=0;
+	fseek(ReadPtr,0, SEEK_SET);
+	while (fread(&AccData,sizeof(struct Accounts),1,ReadPtr)==1)
+	{
+		if (strcmp(AccData.accNo,accnum)==0 && strcmp(AccData.pin,pinnum)==0)
 		{
-			printf("\nWelcome");
-			fclose(ReadPtr);
+			found=1;
 			break;
 		}
 	}
+	if (found)
+	{
+		if (AccData.Active==0)
+		{
+			printf("Your account is inaccessible at this point of time. Please contact the bank for further information or help.");
+			getch();
+			fclose(ReadPtr);
+			exit(0);
+		}
+		printf("\nWelcome");
+		fclose(ReadPtr);
+	}
+	else
+	{
+		retry=retry+1;
+		if (retry<4)
+		{
+			printf("\nInvalid account number or PIN number please try again");
+			printf("\ntries remaining:%d",5-retry);
+			getch();
+			system("cls");
+			goto Auth;
+		}
+		else
+		{
+			printf("\nYour choice of input has failed to access the account multiple times. So we have proceeded to end the application.");
+			fclose(ReadPtr);
+			exit(0);
+		}
+	}
 }
-
 void Amend(long int Inflow,long int Outflow)
 {
 	struct Accounts Temp;
@@ -132,6 +173,7 @@ WD:
 		goto WD;
 	}
 	cash=0;
+	getch();
 }
 
 void Deposit()
@@ -154,6 +196,7 @@ DP:
 		goto DP;
 	}
 	cash=0;
+	getch();
 }
 
 void BalanceInquiry()
@@ -192,7 +235,8 @@ void NewID()
 	char ch;
 	memset(&AccData, 0, sizeof(AccData));
 	struct Accounts AccChk;
-    int min=1111111111111111,max=9999999999999999;
+	long long int min=1111111111111111,max=9999999999999999,accnum;
+	int i,j,flag;
 	char choice;
 	FILE *NewIDPtr=fopen("AccountRecords.bin","ab");
 	FILE *AccNo=fopen("AccountRecords.bin","rb");
@@ -201,108 +245,77 @@ void NewID()
 		printf("file not opened");
 		exit(0);
 	}
-	AccNoLoop:
-	accnum=min+rand()%(max-min+1);;//unique generation for acc no.
-	snprintf(AccData.accNo,sizeof(AccData.accNo),"%d",accnum);//acc no. generated above is integer in nature so we change it into string
-	while(fread(&AccData,sizeof(struct Accounts),1,AccNo)==1)
+AccNoLoop:
+	accnum = min + (((long long)rand() * RAND_MAX + rand()) % (max - min + 1));//unique generation for acc no.
+	snprintf(AccData.accNo,sizeof(AccData.accNo),"%lld",accnum);//acc no. generated above is integer in nature so we change it into string
+	fseek(AccNo,0, SEEK_SET);
+	while(fread(&AccChk,sizeof(struct Accounts),1,AccNo)==1)
 	{
 		if (strcmp(AccData.accNo,AccChk.accNo)==0)
 		{
-			num++;
-			fseek(AccNo,0, SEEK_SET);
 			goto AccNoLoop;
 		}
 	}
-	int flag;
-do
-{
-    flag = 1;
-
-    printf("\nEnter your Name: ");
-    fflush(stdin);
-    fgets(AccData.name, sizeof(AccData.name), stdin);
-
-    // Remove newline character manually
-    for(i = 0; AccData.name[i] != '\0'; i++)
-    {
-        if(AccData.name[i] == '\n')
-        {
-            AccData.name[i] = '\0';
-            break;
-        }
-    }
-
-    // Check if name is empty
-    if(strlen(AccData.name) == 0)
-    {
-        flag = 0;
-    }
-
-    // Validate characters
-    for(i = 0; AccData.name[i] != '\0'; i++)
-    {
-        ch = AccData.name[i];
-
-        if(!((ch >= 'A' && ch <= 'Z') ||
-             (ch >= 'a' && ch <= 'z') ||
-             (ch == ' ')))
-        {
-            flag = 0;
-            break;
-        }
-    }
-
-    if(flag == 0)
-    {
-        printf("\nInvalid Name!");
-        printf("\nOnly alphabets and spaces are allowed.\n");
-    }
-
-} while(flag == 0);
+	do
+	{
+		flag = 1;
+		printf("\nEnter your Name: ");
+		fflush(stdin);
+		fgets(AccData.name, sizeof(AccData.name), stdin);
+		AccData.name[strcspn(AccData.name, "\n")] = '\0';
+		if(strlen(AccData.name) == 0)
+		{
+			flag = 0;
+		}
+		// Validate characters
+		for(i = 0; AccData.name[i] != '\0'; i++)
+		{
+			ch = AccData.name[i];
+			if(!((ch >= 'A' && ch <= 'Z') ||
+			        (ch >= 'a' && ch <= 'z') ||
+			        (ch == ' ')))
+			{
+				flag = 0;
+				break;
+			}
+		}
+		if(flag == 0)
+		{
+			printf("\nInvalid Name!");
+			printf("\nOnly alphabets and spaces are allowed.\n");
+		}
+	}
+	while(flag == 0);
 PIN:
-printf("\nEnter a 4-digit PIN: ");
-fflush(stdin);
-fgets(AccData.pin, sizeof(AccData.pin), stdin);
-
-// Remove newline character manually
-for(i = 0; AccData.pin[i] != '\0'; i++)
-{
-    if(AccData.pin[i] == '\n')
-    {
-        AccData.pin[i] = '\0';
-        break;
-    }
-}
-
-// Check PIN length
-if(strlen(AccData.pin) != 4)
-{
-    printf("\nPIN must be exactly 4 digits.\n");
-    goto PIN;
-}
-
-// Check that all characters are digits
-for(i = 0; i < 4; i++)
-{
-    if(AccData.pin[i] < '0' || AccData.pin[i] > '9')
-    {
-        printf("\nPIN must contain only digits (0-9).\n");
-        goto PIN;
-    }
-}
-
-// Check for duplicate digits (optional)
-for(i = 0; i < 4; i++)
-{
-    for(j = i + 1; j < 4; j++)
-    {
-        if(AccData.pin[i] == AccData.pin[j])
-        {
-            printf("\nAll PIN digits must be unique.\n");
-            goto PIN;
-        }
-    }
-}
+	printf("\nEnter a 4-digit PIN: ");
+	fflush(stdin);
+	fgets(AccData.pin, sizeof(AccData.pin), stdin);
+	AccData.pin[strcspn(AccData.pin, "\n")] = '\0';
+	if(strlen(AccData.pin) != 4)
+	{
+		printf("\nPIN must be exactly 4 digits.\n");
+		goto PIN;
+	}
+	for(i = 0; i < 4; i++)
+	{
+		if(AccData.pin[i] < '0' || AccData.pin[i] > '9')
+		{
+			printf("\nPIN must contain only digits (0-9).\n");
+			goto PIN;
+		}
+	}
+	// Check for duplicate digits (optional)
+	for(i = 0; i < 4; i++)
+	{
+		for(j = i + 1; j < 4; j++)
+		{
+			if(AccData.pin[i] == AccData.pin[j])
+			{
+				printf("\nAll PIN digits must be unique.\n");
+				goto PIN;
+			}
+		}
+	}
 AccType:
 	printf("\nChoose a account type:\na.Fixed Account\nb.Current Account\nc.Savings Account\n");
 	fflush(stdin);
@@ -336,8 +349,9 @@ BalanceChoice:
 		scanf("%ld",&cash);
 		strcpy(AccData.transaction[0].date,__DATE__);
 		strcpy(AccData.transaction[0].time,__TIME__);
-		AccData.transaction[0].bal[0]=0;
-		AccData.transaction[0].bal[1]+=cash;
+		AccData.transaction[0].bal[1]=0;
+		AccData.transaction[0].bal[0]+=cash;
+		AccData.balance+=cash;
 		printf("\nYour opening balance with additional credits has been set");
 	}
 	else if (choice=='n')
@@ -345,17 +359,19 @@ BalanceChoice:
 		printf("\nYour opening balance has been set");
 		strcpy(AccData.transaction[0].date,__DATE__);
 		strcpy(AccData.transaction[0].time,__TIME__);
-		AccData.transaction[0].bal[0]=0;
-		AccData.transaction[0].bal[1]+=cash;
+		AccData.transaction[0].bal[1]=0;
+		AccData.transaction[0].bal[0]+=cash;
 	}
 	else
 	{
 		printf("\nInvalid choice please try again.");
 		goto BalanceChoice;
 	}
+	AccData.Active=1;
+	printf("\n%s your Account Number is: %s with PIN number: %s",AccData.name,AccData.accNo,AccData.pin);
 	fwrite(&AccData,sizeof(struct Accounts),1,NewIDPtr);
-	
 	cash=0;
+	getch();
 	fclose(NewIDPtr);
 	fclose(AccNo);
 }
@@ -367,7 +383,6 @@ int main()
 	fflush(stdin);
 	printf("\n\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
 	getch();
-
 Startup:
 	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
 	printf("\na. Withdraw Cash");
@@ -385,24 +400,20 @@ Startup:
 		case 'a'://withdraw
 			Withdraw();
 			system("cls");
-			getch();
 			goto Startup;
 			break;
 		case 'b'://deposit
 			Deposit();
 			system("cls");
-			getch();
 			goto Startup;
 			break;
 		case 'c'://balance inquiry
 			BalanceInquiry();
 			system("cls");
-			getch();
 			goto Startup;
 			break;
 		case 'd'://new acc creation
 			NewID();
-			getch();
 			system("cls");
 			goto Startup;
 			break;
