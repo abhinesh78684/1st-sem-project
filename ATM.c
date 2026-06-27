@@ -188,6 +188,7 @@ void BalanceInquiry()
 void NewID()
 {
 	system("cls");
+	char ch;
 	memset(&AccData, 0, sizeof(AccData));
 	struct Accounts AccChk;
 	int i,j,min=11111111,max=99999999,accnum=0,num=0;
@@ -211,30 +212,96 @@ void NewID()
 			goto AccNoLoop;
 		}
 	}
-	printf("\nEnter you Name: ");
-	fflush(stdin);
-	gets(AccData.name);
+	int flag;
+do
+{
+    flag = 1;
+
+    printf("\nEnter your Name: ");
+    fflush(stdin);
+    fgets(AccData.name, sizeof(AccData.name), stdin);
+
+    // Remove newline character manually
+    for(i = 0; AccData.name[i] != '\0'; i++)
+    {
+        if(AccData.name[i] == '\n')
+        {
+            AccData.name[i] = '\0';
+            break;
+        }
+    }
+
+    // Check if name is empty
+    if(strlen(AccData.name) == 0)
+    {
+        flag = 0;
+    }
+
+    // Validate characters
+    for(i = 0; AccData.name[i] != '\0'; i++)
+    {
+        ch = AccData.name[i];
+
+        if(!((ch >= 'A' && ch <= 'Z') ||
+             (ch >= 'a' && ch <= 'z') ||
+             (ch == ' ')))
+        {
+            flag = 0;
+            break;
+        }
+    }
+
+    if(flag == 0)
+    {
+        printf("\nInvalid Name!");
+        printf("\nOnly alphabets and spaces are allowed.\n");
+    }
+
+} while(flag == 0);
 PIN:
-	printf("\nEnter a unique pin to your account(0 to 9): ");
-	fflush(stdin);
-	fgets(AccData.pin,5,stdin);
-	for (i=0; i<4; i++)
-	{
-		for (j=i+1; j<4; j++)
-		{
-			if (AccData.pin[i]<'0' || AccData.pin[i]>'9')
-			{
-				printf("\nThe pin can only have numbers from 0 to 9\n");
-				goto PIN;
-			}
-			if (AccData.pin[i]==AccData.pin[j])
-			{
-				printf("\nThe pin is not unique enough please try again.\n");
-				goto PIN;
-			}
-		}
-	}
-	printf("\n%s your Account Number is: %s with PIN number: %s",AccData.name,AccData.accNo,AccData.pin);
+printf("\nEnter a 4-digit PIN: ");
+fflush(stdin);
+fgets(AccData.pin, sizeof(AccData.pin), stdin);
+
+// Remove newline character manually
+for(i = 0; AccData.pin[i] != '\0'; i++)
+{
+    if(AccData.pin[i] == '\n')
+    {
+        AccData.pin[i] = '\0';
+        break;
+    }
+}
+
+// Check PIN length
+if(strlen(AccData.pin) != 4)
+{
+    printf("\nPIN must be exactly 4 digits.\n");
+    goto PIN;
+}
+
+// Check that all characters are digits
+for(i = 0; i < 4; i++)
+{
+    if(AccData.pin[i] < '0' || AccData.pin[i] > '9')
+    {
+        printf("\nPIN must contain only digits (0-9).\n");
+        goto PIN;
+    }
+}
+
+// Check for duplicate digits (optional)
+for(i = 0; i < 4; i++)
+{
+    for(j = i + 1; j < 4; j++)
+    {
+        if(AccData.pin[i] == AccData.pin[j])
+        {
+            printf("\nAll PIN digits must be unique.\n");
+            goto PIN;
+        }
+    }
+}
 AccType:
 	printf("\nChoose a account type:\na.Fixed Account\nb.Current Account\nc.Savings Account\n");
 	fflush(stdin);
@@ -298,7 +365,7 @@ int main()
 	fflush(stdin);
 	printf("\n\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
 	getch();
-	system("cls");
+
 Startup:
 	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
 	printf("\na. Withdraw Cash");
