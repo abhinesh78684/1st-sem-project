@@ -4,7 +4,7 @@
 #include<time.h>
 #include<conio.h>
 #include<string.h>
-
+#include<raylib.h>
 struct Balance
 {
 	long int bal[2];//0 stores deposit, 1 stores withdraw
@@ -26,9 +26,9 @@ struct Accounts
 
 long int cash;
 
-void Authenticaton()
+void Authentication()
 {
-	FILE *ReadPtr=fopen("AccountRecords.bin","rb");
+	FILE *ReadPtr=fopen("data/AccountRecords.bin","rb");
 	if (ReadPtr==NULL)
 	{
 		printf("\nFile not readable");
@@ -116,7 +116,7 @@ PINAuth:
 void Amend(long int Inflow,long int Outflow)
 {
 	struct Accounts Temp;
-	FILE *AmendPtr=fopen("AccountRecords.bin","rb+");
+	FILE *AmendPtr=fopen("data/AccountRecords.bin","rb+");
 	if (AmendPtr==NULL)
 	{
 		printf("\nFile not opened.");
@@ -145,7 +145,7 @@ void Amend(long int Inflow,long int Outflow)
 void Withdraw()
 {
 	system("cls");
-	Authenticaton();
+	Authentication();
 WD:
 	printf("\nEnter amount in Nrs that you want to withdraw:");
 	scanf("%ld",&cash);
@@ -179,7 +179,7 @@ WD:
 void Deposit()
 {
 	system("cls");
-	Authenticaton();
+	Authentication();
 DP:
 	printf("\nEnter the amount you want to deposit to your account:");
 	scanf("%ld",&cash);
@@ -203,7 +203,7 @@ void BalanceInquiry()
 {
 	system("cls");
 	int i=0;
-	Authenticaton();
+	Authentication();
 	printf("\n                                   BALANCE INQUIRY");
 	printf("\n_____________________________________________________________________________________________");
 	printf("\nDate                     |Time                        |Credit                 |Debit         ");
@@ -238,8 +238,8 @@ void NewID()
 	long long int min=1111111111111111,max=9999999999999999,accnum;
 	int i,j,flag;
 	char choice;
-	FILE *NewIDPtr=fopen("AccountRecords.bin","ab");
-	FILE *AccNo=fopen("AccountRecords.bin","rb");
+	FILE *NewIDPtr=fopen("data/AccountRecords.bin","ab");
+	FILE *AccNo=fopen("data/AccountRecords.bin","rb");
 	if (NewIDPtr==NULL)
 	{
 		printf("file not opened");
@@ -376,11 +376,18 @@ BalanceChoice:
 	fclose(AccNo);
 }
 
-int main()
+void AccDetails()
+{
+	Authentication();
+	printf("Dear customer %s, your account number is %s. \nOpened as %s with current balance %ld",AccData.name,AccData.accNo,AccData.accType,AccData.balance);
+}
+
+int main(void)
 {
 	char choice;
 	srand(time(NULL)^getpid());
 	fflush(stdin);
+	InitWindow(100,100, "Welcome to KIST BANKING SERVICES");
 	printf("\n\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
 	getch();
 Startup:
@@ -417,7 +424,12 @@ Startup:
 			system("cls");
 			goto Startup;
 			break;
-		case 'e'://exit case
+		case 'e'://enter name and pin for AccNum identification
+			AccDetails();
+			system("cls");
+			goto Startup;
+			break;
+		case 'f'://exit case
 			exit(0);
 			break;
 		default:
@@ -427,5 +439,4 @@ Startup:
 			goto Startup;
 			break;
 	}
-	return 0;
 }
