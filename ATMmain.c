@@ -387,10 +387,12 @@ int main(void)
 	char choice;
 	srand(time(NULL)^getpid());
 	fflush(stdin);
-	InitWindow(100,100, "Welcome to KIST BANKING SERVICES");
-	printf("\n\t\t\t\t\t\tWelcome To KIST Sem1 Banking/ATM System");
-	getch();
-Startup:
+	InitWindow(1366,768,"Banking System");
+	BeginDrawing();
+	ClearBackground(RAYWHITE);
+	DrawText("Welcome To KIST Sem 1 Banking and ATM System", 350, 400, 30, LIGHTGRAY);	
+	EndDrawing();
+	Startup:
 	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
 	printf("\na. Withdraw Cash");
 	printf("\nb. Deposit Cash");
@@ -430,6 +432,7 @@ Startup:
 			goto Startup;
 			break;
 		case 'f'://exit case
+			CloseWindow();
 			exit(0);
 			break;
 		default:
@@ -439,4 +442,5 @@ Startup:
 			goto Startup;
 			break;
 	}
+	CloseWindow();
 }
