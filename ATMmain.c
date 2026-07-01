@@ -1,10 +1,10 @@
 #include<stdio.h>
-#include <unistd.h>
+#include<unistd.h>
 #include<stdlib.h>
 #include<time.h>
 #include<conio.h>
 #include<string.h>
-#include<raylib.h>
+
 struct Balance
 {
 	long int bal[2];//0 stores deposit, 1 stores withdraw
@@ -64,7 +64,7 @@ PINAuth:
 		printf("\nPIN must be exactly 4 digits.\n");
 		goto PINAuth;
 	}
-	for(i = 0; i < (int)strlen(pinnum); i++)
+	for(i = 0; i < 4; i++)
 	{
 		if(!(pinnum[i] >= '0' && pinnum[i] <= '9'))
 		{
@@ -87,6 +87,7 @@ PINAuth:
 		if (AccData.Active==0)
 		{
 			printf("Your account is inaccessible at this point of time. Please contact the bank for further information or help.");
+			getch();
 			getch();
 			fclose(ReadPtr);
 			exit(0);
@@ -206,7 +207,7 @@ void BalanceInquiry()
 	Authentication();
 	printf("\n                                   BALANCE INQUIRY");
 	printf("\n_____________________________________________________________________________________________");
-	printf("\nDate                     |Time                        |Credit                 |Debit         ");
+	printf("\nDate           |Time          |Credit                 |Debit         ");
 	for (i=0; i<10; i++)
 	{
 		if (AccData.transaction[i].bal[1]==0 && AccData.transaction[i].bal[0]==0)
@@ -217,11 +218,11 @@ void BalanceInquiry()
 		{
 			if(AccData.transaction[i].bal[1]==0 && AccData.transaction[i].bal[0]!=0)//deposit
 			{
-				printf("\n%s\t%s\t%ld\t\t-",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[0]);
+				printf("\n%s%s\t%ld\t\t        -",AccData.transaction[i].date,AccData.transaction[i].bal[0]);
 			}
 			else if(AccData.transaction[i].bal[0]==0 && AccData.transaction[i].bal[1]!=0)//withdraw
 			{
-				printf("\n%s\t%s\t-\t\t%ld",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[1]);
+				printf("\n%s\t%s\t       -\t\t             %ld",AccData.transaction[i].date,AccData.transaction[i].time,AccData.transaction[i].bal[1]);
 			}
 		}
 	}
@@ -386,19 +387,16 @@ int main(void)
 {
 	char choice;
 	srand(time(NULL)^getpid());
+Startup:
+	printf("                      Welcome to KIST Banking System");
 	fflush(stdin);
-	InitWindow(1366,768,"Banking System");
-	BeginDrawing();
-	ClearBackground(RAYWHITE);
-	DrawText("Welcome To KIST Sem 1 Banking and ATM System", 350, 400, 30, LIGHTGRAY);	
-	EndDrawing();
-	Startup:
 	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
 	printf("\na. Withdraw Cash");
 	printf("\nb. Deposit Cash");
 	printf("\nc. Balance Inquiry");
 	printf("\nd. New ID");
-	printf("\ne. Exit");
+	printf("\ne. Acc Details");
+	printf("\nf. Exit");
 	printf("\n----------------------------------------------------------------------------------------------------------------------------------------------");
 	printf("\nProceed to select an option\n");
 	fflush(stdin);
@@ -432,7 +430,6 @@ int main(void)
 			goto Startup;
 			break;
 		case 'f'://exit case
-			CloseWindow();
 			exit(0);
 			break;
 		default:
@@ -442,5 +439,4 @@ int main(void)
 			goto Startup;
 			break;
 	}
-	CloseWindow();
 }
